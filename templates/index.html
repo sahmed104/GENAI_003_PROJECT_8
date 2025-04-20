@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Parwaaz</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+  <div class="max-w-4xl mx-auto px-6 py-10">
+    <!-- Logo and Title -->
+    <div class="flex items-center space-x-4 mb-6">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/7/70/Dove_symbol.svg" alt="Parwaaz Logo" class="w-10 h-10">
+      <h1 class="text-3xl font-bold tracking-wide">Parwaaz</h1>
+    </div>
+
+    <!-- Tagline -->
+    <p class="text-lg font-medium text-gray-600 mb-8">Learn. Fly. Rise.</p>
+
+    <!-- Input Row -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+      <select id="gradeSelect" class="border rounded px-3 py-2 col-span-1">
+        <option value="">Grade Level</option>
+        <option>6</option>
+        <option>7</option>
+        <option>8</option>
+      </select>
+      <select id="subjectSelect" class="border rounded px-3 py-2 col-span-1">
+        <option value="">Subject</option>
+        <option>Math</option>
+        <option>Science</option>
+        <option>English</option>
+        <option>History</option>
+        <option>Geography</option>
+        <option>Foreign Language</option>
+        <option>Computer Science</option>
+        <option>Economics</option>
+        <option>Art</option>
+        <option>Music</option>
+        <option>Health</option>
+        <option>Physical Education</option>
+      </select>
+      <input id="promptInput" type="text" placeholder="Topic" class="col-span-2 border rounded px-3 py-2"/>
+    </div>
+
+    <!-- Quiz & Flashcard Options -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Quiz Type</label>
+        <select id="quizTypeSelect" class="border rounded px-3 py-2 w-full">
+          <option value="mcq">Multiple Choice</option>
+          <option value="fill_blank">Fill in the Blank</option>
+          <option value="true_false">True/False</option>
+          <option value="short_answer">Short Answer</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1"># Quiz Questions</label>
+        <select id="quizCountSelect" class="border rounded px-3 py-2 w-full">
+          <option>3</option>
+          <option>4</option>
+          <option>5</option>
+          <option>7</option>
+          <option>10</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1"># Flashcards</label>
+        <select id="flashCountSelect" class="border rounded px-3 py-2 w-full">
+          <option>3</option>
+          <option>4</option>
+          <option>5</option>
+          <option>7</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Generate Button -->
+    <div class="flex justify-end mb-6">
+      <button id="generateBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded flex items-center space-x-2">
+        <span>Generate</span>
+      </button>
+    </div>
+
+    <!-- Results -->
+    <div class="border rounded p-4 mb-4 bg-white shadow-sm summary-box">
+      <h2 class="font-bold mb-2">Summary</h2>
+      <p>Generated summary will appear here...</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="border rounded p-4 bg-white shadow-sm quiz-box">
+        <h2 class="font-bold mb-2">Quiz</h2>
+        <p>Generated quiz will appear here...</p>
+      </div>
+      <div class="border rounded p-4 bg-white shadow-sm flashcard-box">
+        <h2 class="font-bold mb-2">Flashcards</h2>
+        <p>Generated flashcards will appear here...</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-10 text-center text-sm text-gray-400">
+      <hr class="mb-4">
+      <p>About | Privacy | Feedback | Contact</p>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById("generateBtn").addEventListener("click", function () {
+      const grade = document.getElementById("gradeSelect").value;
+      const subject = document.getElementById("subjectSelect").value;
+      const prompt = document.getElementById("promptInput").value;
+      const quiz_type = document.getElementById("quizTypeSelect").value;
+      const quiz_count = document.getElementById("quizCountSelect").value;
+      const flashcard_count = document.getElementById("flashCountSelect").value;
+
+      const payload = {
+        grade,
+        subject,
+        prompt,
+        quiz_type,
+        quiz_count,
+        flashcard_count
+      };
+
+      // Loading feedback
+      document.querySelector(".summary-box").innerHTML = "<h2 class='font-bold mb-2'>Summary</h2><p>Loading...</p>";
+      document.querySelector(".quiz-box").innerHTML = "<h2 class='font-bold mb-2'>Quiz</h2><p>Loading...</p>";
+      document.querySelector(".flashcard-box").innerHTML = "<h2 class='font-bold mb-2'>Flashcards</h2><p>Loading...</p>";
+
+      fetch('/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch");
+        }
+        return res.json();
+      })
+      .then(data => {
+        document.querySelector(".summary-box").innerHTML = `<h2 class='font-bold mb-2'>Summary</h2><p>${data.summary}</p>`;
+        document.querySelector(".quiz-box").innerHTML = `<h2 class='font-bold mb-2'>Quiz</h2><pre>${data.quiz}</pre>`;
+        document.querySelector(".flashcard-box").innerHTML = `<h2 class='font-bold mb-2'>Flashcards</h2><pre>${data.flashcards}</pre>`;
+      })
+      .catch(error => {
+        alert("Something went wrong while contacting the server.");
+        console.error(error);
+      });
+    });
+  </script>
+</body>
+</html>
