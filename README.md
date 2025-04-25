@@ -23,7 +23,6 @@ Parwaaz/
 ├── app/                    # Flask backend logic (views, API handling)
 ├── run.py                  # Entry point to run the Flask app
 ├── .env                    # Environment variables (excluded from Git)
-├── requirements.txt        # Python dependencies
 └── README.md               # Project documentation
 </pre>
 
