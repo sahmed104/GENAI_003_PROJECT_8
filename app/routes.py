@@ -42,7 +42,7 @@ def generate():
         summary = future_summary.result()
         quiz = future_quiz.result()
         flashcards = future_flashcards.result()
-        
+
     return jsonify({
         "summary": summary,
         "quiz": quiz,

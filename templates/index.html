@@ -11,6 +11,32 @@
     .transform-style { transform-style: preserve-3d; }
     .backface-hidden { backface-visibility: hidden; }
     .rotate-y-180 { transform: rotateY(180deg); }
+    @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(10px); }
+    }
+
+    .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .animate-fade-out {
+    animation: fadeOut 0.4s ease-in forwards;
+    }
+    @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast-show {
+    display: block !important;
+    animation: slideDown 0.4s ease-out forwards;
+    }
   </style>
   <script>
     window.MathJax = {
@@ -49,12 +75,24 @@
     <div>
       <label class="text-sm font-medium">Subject</label>
       <select id="subjectSelect" class="w-full border px-3 py-2 rounded">
-        <option value="">Select</option><option>Math</option><option>Science</option><option>English</option>
+        <option value="">Select</option>
+        <option>Math</option>
+        <option>Science</option>
+        <option>English</option>
+        <option>History</option>
+        <option>Geography</option>
+        <option>Foreign Language</option>
+        <option>Computer Science</option>
+        <option>Economics</option>
+        <option>Art</option>
+        <option>Music</option>
+        <option>Health</option>
+        <option>Physical Education</option>
       </select>
     </div>
     <div class="md:col-span-2">
       <label class="text-sm font-medium">Topic</label>
-      <input id="promptInput" class="w-full border px-3 py-2 rounded" placeholder="e.g. Fractions"/>
+      <input id="promptInput" class="w-full border px-3 py-2 rounded" placeholder="e.g. Photosynthesis, Fractions, Transitions"/>
     </div>
   </div>
 
@@ -63,16 +101,19 @@
       <label class="text-sm font-medium">Quiz Type</label>
       <select id="quizTypeSelect" class="w-full border px-3 py-2 rounded">
         <option value="mcq">Multiple Choice</option>
+        <option value="fill_blank">Fill in the Blank</option>
+        <option value="true_false">True/False</option>
+        <option value="short_answer">Short Answer</option>
       </select>
     </div>
     <div>
-      <label class="text-sm font-medium"># of Questions</label>
+      <label class="text-sm font-medium">Number of Practice Questions</label>
       <select id="quizCountSelect" class="w-full border px-3 py-2 rounded">
         <option>3</option><option>5</option><option>7</option>
       </select>
     </div>
     <div>
-      <label class="text-sm font-medium"># of Flashcards</label>
+      <label class="text-sm font-medium">Number of Flashcards</label>
       <select id="flashCountSelect" class="w-full border px-3 py-2 rounded">
         <option>3</option><option>5</option><option>7</option>
       </select>
@@ -127,10 +168,8 @@
     <button onclick="dismissOwl()" class="text-xs text-blue-500 mt-2 hover:underline">Dismiss</button>
   </div>
 </div>
+
 <!-- Scripts -->
-
-<!-- 🧠 JUST THE SCRIPT CHANGES NEEDED 🧠 -->
-
 <script>
   let flashcards = [], flashIndex = 0, flipped = false;
 
@@ -213,20 +252,50 @@
   }
 
   function parseFlashcards(raw) {
-    const cards = [];
-    const lines = raw.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].toLowerCase().includes("term:")) {
-        const term = lines[i].split(":")[1]?.trim() || "";
-        const explanation = lines[i + 1]?.split(":")[1]?.trim() || "";
+  const cards = [];
+  const lines = raw.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Format 1: Numbered format - "1. Term"
+    if (/^\d+\.\s+/.test(line)) {
+      const term = line.replace(/^\d+\.\s+/, '').trim();
+      const nextLine = lines[i + 1]?.trim();
+      if (nextLine?.toLowerCase().startsWith("explanation:")) {
+        const explanation = nextLine.split(":").slice(1).join(":").trim();
         cards.push({ term, definition: explanation });
+        i++;
+        continue;
       }
     }
-    return cards;
+
+    // Format 2: Term: Explanation:
+    if (line.toLowerCase().startsWith("term:")) {
+      const term = line.split(":").slice(1).join(":").trim();
+      const nextLine = lines[i + 1]?.trim();
+      if (nextLine?.toLowerCase().startsWith("explanation:")) {
+        const explanation = nextLine.split(":").slice(1).join(":").trim();
+        cards.push({ term, definition: explanation });
+        i++;
+        continue;
+      }
+    }
+
+    // Format 3: Term - Explanation on same line
+    if (/^.*term.*:.*explanation.*:/i.test(line)) {
+      const [_, termPart, explanationPart] = line.match(/term\s*:\s*(.*?)\s*-+\s*explanation\s*:\s*(.*)/i) || [];
+      if (termPart && explanationPart) {
+        cards.push({ term: termPart.trim(), definition: explanationPart.trim() });
+      }
+    }
   }
 
+  return cards;
+}
+
   // Quiz Renderer
-  function renderQuizTyped(raw) {
+  function renderQuizTyped(raw, quizType) {
     const lines = raw.split('\n');
     const quizBlock = document.getElementById("quizOutput");
     const answersBlock = document.getElementById("quizAnswers");
@@ -242,7 +311,7 @@
     lines.forEach(line => {
       line = line.trim();
 
-      if (line.toLowerCase().startsWith("answers:")) {
+      if (line.toLowerCase().startsWith("answers:") || line.toLowerCase().startsWith("answer:")) {
         isAnswerSection = true;
         return;
       }
@@ -256,9 +325,12 @@
         if (buffer) htmls.push(buffer);
         questionNum++;
         buffer = `<p class='font-semibold mt-2'>${line}</p>`;
-      } else if (line.match(/^[A-D]\./)) {
+      } else if (quizType === "mcq" && line.match(/^[A-D]\./)) {
         const name = 'q' + questionNum;
         buffer += `<label class='block ml-4'><input type='radio' name='${name}' class='mr-2'> ${line}</label>`;
+      } else {
+        // for true/false, short answer, fill_blank — just plain text lines
+        buffer += `<p class="ml-4">${line}</p>`;
       }
     });
 
@@ -266,9 +338,18 @@
 
     typeHTMLContent("quizOutput", htmls.join(''), 5);
 
-    const formatted = [...answerLine.matchAll(/(Q\d+):\s*([A-D])/g)].map(match => {
-      return `<li><strong>${match[1]}</strong>: ${match[2]}</li>`;
-    }).join('');
+    // Format answers
+    let formatted = '';
+    // Match A/B/C answers like "Q1: A"
+    const abcFormat = [...answerLine.matchAll(/(Q\d+):\s*([A-D])/g)];
+    if (abcFormat.length) {
+      formatted = abcFormat.map(match => `<li><strong>${match[1]}</strong>: ${match[2]}</li>`).join('');
+    } else {
+      // Match longer answers like "Q1. Answer sentence..."
+      const longFormat = [...answerLine.matchAll(/(Q\d+)[.:]\s*(.+?)(?=Q\d+|$)/gs)];
+      formatted = longFormat.map(match => `<li><strong>${match[1]}</strong>: ${match[2].trim()}</li>`).join('');
+  }
+
 
     if (formatted) {
       typeHTMLContent("quizAnswers", `<ul class='list-disc pl-5'>${formatted}</ul>`, 8);
@@ -294,48 +375,92 @@
     setTimeout(() => document.getElementById("splashScreen").style.display = "none", 700);
   }
 
+  function showParwaazToast(message) {
+    const toast = document.getElementById("parwaazToast");
+    const msg = document.getElementById("toastMsg");
+    msg.textContent = message;
+    toast.classList.add("toast-show");
+
+    setTimeout(() => {
+      hideToast();
+    }, 4000);
+  }
+
+function hideToast() {
+    const toast = document.getElementById("parwaazToast");
+    toast.classList.remove("toast-show");
+    toast.classList.add("hidden");
+  }
+
   // GENERATE Button Handler
   document.getElementById("generateBtn").addEventListener("click", function () {
-    const payload = {
-      grade: document.getElementById("gradeSelect").value,
-      subject: document.getElementById("subjectSelect").value,
-      prompt: document.getElementById("promptInput").value,
-      quiz_type: document.getElementById("quizTypeSelect").value,
-      quiz_count: document.getElementById("quizCountSelect").value,
-      flashcard_count: document.getElementById("flashCountSelect").value
-    };
+  const grade = document.getElementById("gradeSelect").value;
+  const subject = document.getElementById("subjectSelect").value;
+  const prompt = document.getElementById("promptInput").value.trim();
+  const quiz_type = document.getElementById("quizTypeSelect").value;
+  const quiz_count = document.getElementById("quizCountSelect").value;
+  const flashcard_count = document.getElementById("flashCountSelect").value;
 
-    updateOwlMessage("🧠 Generating content...");
-    document.getElementById("learnArea").classList.add("hidden");
-    document.getElementById("summaryOutput").textContent = "Typing...";
-    document.getElementById("quizOutput").innerHTML = "";
-    document.getElementById("quizAnswers").innerHTML = "";
-    document.getElementById("flashFront").textContent = "";
-    document.getElementById("flashBack").textContent = "";
-    document.getElementById("flashIndex").textContent = "";
+  // Validate all required fields
+  if (!grade || !subject || !prompt || !quiz_type || !quiz_count || !flashcard_count) {
+    showParwaazToast("Please fill out all fields before generating content.");
+    return;
+  }
 
-    fetch('/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById("learnArea").classList.remove("hidden");
-      const formatted = formatMarkdown(data.summary);
-      typeHTMLContent("summaryOutput", formatted, 10);
-      renderQuizTyped(data.quiz);
-      flashcards = parseFlashcards(data.flashcards);
-      flashIndex = 0;
-      updateFlashcard();
-      updateOwlMessage("✅ Lesson ready! Flip cards or try the quiz.");
-    })
-    .catch(error => {
-      console.error(error);
-      alert("Something went wrong!");
-    });
+  const payload = {
+    grade,
+    subject,
+    prompt,
+    quiz_type,
+    quiz_count,
+    flashcard_count
+  };
+
+  // Continue with generation...
+  updateOwlMessage("🧠 Generating content...");
+  document.getElementById("learnArea").classList.add("hidden");
+  document.getElementById("summaryOutput").textContent = "Typing...";
+  document.getElementById("quizOutput").innerHTML = "";
+  document.getElementById("quizAnswers").innerHTML = "";
+  document.getElementById("quizAnswers").classList.add("hidden");
+  document.getElementById("flashFront").textContent = "";
+  document.getElementById("flashBack").textContent = "";
+  document.getElementById("flashIndex").textContent = "";
+
+  fetch('/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("learnArea").classList.remove("hidden");
+    const formatted = formatMarkdown(data.summary);
+    typeHTMLContent("summaryOutput", formatted, 10);
+    renderQuizTyped(data.quiz);
+    flashcards = parseFlashcards(data.flashcards);
+    flashIndex = 0;
+    updateFlashcard();
+    updateOwlMessage("✅ Lesson ready! Flip cards or try the quiz.");
+  })
+  .catch(error => {
+    console.error(error);
+    alert("Something went wrong!");
   });
+});
 </script>
+
+<!-- Custom Toast -->
+<div id="parwaazToast" class="fixed top-5 right-5 z-50 bg-white border-l-4 border-blue-600 shadow-xl rounded-md p-4 w-80 hidden transition-all duration-300 ease-out">
+  <div class="flex items-start space-x-3">
+    <div class="text-blue-600 mt-0.5">📢</div>
+    <div class="flex-1">
+      <p class="font-bold text-blue-800 text-sm">Parwaaz says:</p>
+      <p id="toastMsg" class="text-sm text-gray-800 mt-1"></p>
+    </div>
+    <button onclick="hideToast()" class="text-blue-500 hover:underline text-xs mt-1">Dismiss</button>
+  </div>
+</div>
 
   
 </body>
