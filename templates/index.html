@@ -4,154 +4,339 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Parwaaz</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+  <style>
+    .perspective { perspective: 1000px; }
+    .transform-style { transform-style: preserve-3d; }
+    .backface-hidden { backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+  </style>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body class="bg-gray-50 font-sans text-gray-800">
-  <div class="max-w-4xl mx-auto px-6 py-10">
-    <!-- Logo and Title -->
-    <div class="flex items-center space-x-4 mb-6">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/7/70/Dove_symbol.svg" alt="Parwaaz Logo" class="w-10 h-10">
-      <h1 class="text-3xl font-bold tracking-wide">Parwaaz</h1>
-    </div>
 
-    <!-- Tagline -->
-    <p class="text-lg font-medium text-gray-600 mb-8">Learn. Fly. Rise.</p>
+<!-- Splash Screen -->
+<div id="splashScreen" class="fixed inset-0 z-50 bg-gray-100 flex flex-col items-center justify-center text-center transition-opacity duration-700">
+  <img src="{{ url_for('static', filename='parwaaz.png') }}" alt="Parwaaz Owl" class="w-36 mb-4 drop-shadow-xl">
+  <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome to Parwaaz</h1>
+  <p class="text-gray-600 mb-6">Your AI learning companion</p>
+  <button onclick="hideSplash()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded shadow">Let’s Begin</button>
+</div>
 
-    <!-- Input Row -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-      <select id="gradeSelect" class="border rounded px-3 py-2 col-span-1">
-        <option value="">Grade Level</option>
-        <option>6</option>
-        <option>7</option>
-        <option>8</option>
-      </select>
-      <select id="subjectSelect" class="border rounded px-3 py-2 col-span-1">
-        <option value="">Subject</option>
-        <option>Math</option>
-        <option>Science</option>
-        <option>English</option>
-        <option>History</option>
-        <option>Geography</option>
-        <option>Foreign Language</option>
-        <option>Computer Science</option>
-        <option>Economics</option>
-        <option>Art</option>
-        <option>Music</option>
-        <option>Health</option>
-        <option>Physical Education</option>
-      </select>
-      <input id="promptInput" type="text" placeholder="Topic" class="col-span-2 border rounded px-3 py-2"/>
-    </div>
-
-    <!-- Quiz & Flashcard Options -->
-    <div class="grid grid-cols-2 gap-4 mb-4">
-      <div>
-        <label class="block text-sm font-medium mb-1">Quiz Type</label>
-        <select id="quizTypeSelect" class="border rounded px-3 py-2 w-full">
-          <option value="mcq">Multiple Choice</option>
-          <option value="fill_blank">Fill in the Blank</option>
-          <option value="true_false">True/False</option>
-          <option value="short_answer">Short Answer</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1"># Quiz Questions</label>
-        <select id="quizCountSelect" class="border rounded px-3 py-2 w-full">
-          <option>3</option>
-          <option>4</option>
-          <option>5</option>
-          <option>7</option>
-          <option>10</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1"># Flashcards</label>
-        <select id="flashCountSelect" class="border rounded px-3 py-2 w-full">
-          <option>3</option>
-          <option>4</option>
-          <option>5</option>
-          <option>7</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Generate Button -->
-    <div class="flex justify-end mb-6">
-      <button id="generateBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded flex items-center space-x-2">
-        <span>Generate</span>
-      </button>
-    </div>
-
-    <!-- Results -->
-    <div class="border rounded p-4 mb-4 bg-white shadow-sm summary-box">
-      <h2 class="font-bold mb-2">Summary</h2>
-      <p>Generated summary will appear here...</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <div class="border rounded p-4 bg-white shadow-sm quiz-box">
-        <h2 class="font-bold mb-2">Quiz</h2>
-        <p>Generated quiz will appear here...</p>
-      </div>
-      <div class="border rounded p-4 bg-white shadow-sm flashcard-box">
-        <h2 class="font-bold mb-2">Flashcards</h2>
-        <p>Generated flashcards will appear here...</p>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="mt-10 text-center text-sm text-gray-400">
-      <hr class="mb-4">
-      <p>About | Privacy | Feedback | Contact</p>
-    </footer>
+<!-- Header -->
+<div class="max-w-6xl mx-auto px-6 py-10">
+  <div class="text-center mb-10">
+    <img src="{{ url_for('static', filename='parwaaz.png') }}" alt="Parwaaz Logo" class="w-32 mx-auto mb-3">
+    <h1 class="text-3xl font-bold text-gray-800">Learn. Fly. Rise.</h1>
   </div>
 
-  <script>
-    document.getElementById("generateBtn").addEventListener("click", function () {
-      const grade = document.getElementById("gradeSelect").value;
-      const subject = document.getElementById("subjectSelect").value;
-      const prompt = document.getElementById("promptInput").value;
-      const quiz_type = document.getElementById("quizTypeSelect").value;
-      const quiz_count = document.getElementById("quizCountSelect").value;
-      const flashcard_count = document.getElementById("flashCountSelect").value;
 
-      const payload = {
-        grade,
-        subject,
-        prompt,
-        quiz_type,
-        quiz_count,
-        flashcard_count
-      };
+<!-- Input Form -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+    <div>
+      <label class="text-sm font-medium">Grade</label>
+      <select id="gradeSelect" class="w-full border px-3 py-2 rounded">
+        <option value="">Select</option><option>6</option><option>7</option><option>8</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-sm font-medium">Subject</label>
+      <select id="subjectSelect" class="w-full border px-3 py-2 rounded">
+        <option value="">Select</option><option>Math</option><option>Science</option><option>English</option>
+      </select>
+    </div>
+    <div class="md:col-span-2">
+      <label class="text-sm font-medium">Topic</label>
+      <input id="promptInput" class="w-full border px-3 py-2 rounded" placeholder="e.g. Fractions"/>
+    </div>
+  </div>
 
-      // Loading feedback
-      document.querySelector(".summary-box").innerHTML = "<h2 class='font-bold mb-2'>Summary</h2><p>Loading...</p>";
-      document.querySelector(".quiz-box").innerHTML = "<h2 class='font-bold mb-2'>Quiz</h2><p>Loading...</p>";
-      document.querySelector(".flashcard-box").innerHTML = "<h2 class='font-bold mb-2'>Flashcards</h2><p>Loading...</p>";
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div>
+      <label class="text-sm font-medium">Quiz Type</label>
+      <select id="quizTypeSelect" class="w-full border px-3 py-2 rounded">
+        <option value="mcq">Multiple Choice</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-sm font-medium"># of Questions</label>
+      <select id="quizCountSelect" class="w-full border px-3 py-2 rounded">
+        <option>3</option><option>5</option><option>7</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-sm font-medium"># of Flashcards</label>
+      <select id="flashCountSelect" class="w-full border px-3 py-2 rounded">
+        <option>3</option><option>5</option><option>7</option>
+      </select>
+    </div>
+  </div>
 
-      fetch('/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error("Failed to fetch");
-        }
-        return res.json();
-      })
-      .then(data => {
-        document.querySelector(".summary-box").innerHTML = `<h2 class='font-bold mb-2'>Summary</h2><p>${data.summary}</p>`;
-        document.querySelector(".quiz-box").innerHTML = `<h2 class='font-bold mb-2'>Quiz</h2><pre>${data.quiz}</pre>`;
-        document.querySelector(".flashcard-box").innerHTML = `<h2 class='font-bold mb-2'>Flashcards</h2><pre>${data.flashcards}</pre>`;
-      })
-      .catch(error => {
-        alert("Something went wrong while contacting the server.");
-        console.error(error);
-      });
+  <div class="flex justify-end mb-6">
+    <button id="generateBtn" class="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700">Generate</button>
+  </div>
+
+  <!-- Learn Area (Initially Hidden) -->
+  <div id="learnArea" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Summary -->
+    <div class="bg-orange-50 border-l-4 border-orange-400 p-5 rounded-xl shadow-sm">
+      <h3 class="text-lg font-bold text-orange-800 mb-2">📘 Summary</h3>
+      <p id="summaryOutput" class="text-sm text-gray-800 whitespace-pre-wrap"></p>
+    </div>
+
+    <!-- Flashcard + Quiz Area -->
+    <div>
+      <!-- Flashcard -->
+      <div class="bg-blue-50 p-4 rounded-xl text-center shadow-inner border mb-4">
+        <div class="relative w-full h-40 perspective mx-auto">
+          <div id="flashcard" class="w-full h-full transition-transform duration-700 transform-style preserve-3d cursor-pointer" onclick="flipFlashcard()">
+            <div id="flashFront" class="absolute inset-0 backface-hidden bg-white rounded-lg p-6 shadow-md flex items-center justify-center text-gray-800 font-bold text-md"></div>
+            <div id="flashBack" class="absolute inset-0 backface-hidden bg-white rounded-lg p-6 shadow-md flex items-center justify-center text-gray-800 text-sm transform rotate-y-180"></div>
+          </div>
+        </div>
+        <div class="mt-3 flex justify-between items-center">
+          <button onclick="prevFlashcard()" class="text-blue-600 hover:underline text-sm">⬅️ Prev</button>
+          <span id="flashIndex" class="text-xs text-gray-500">Card 1</span>
+          <button onclick="nextFlashcard()" class="text-blue-600 hover:underline text-sm">Next ➡️</button>
+        </div>
+      </div>
+
+      <!-- Quiz -->
+      <div class="bg-white p-4 rounded-xl shadow-md border border-gray-200">
+        <h3 class="text-md font-semibold text-blue-800 mb-2">📋 Quiz Preview</h3>
+        <div id="quizOutput" class="text-gray-700 text-sm space-y-2"></div>
+        <button onclick="toggleAnswers()" class="text-blue-600 mt-2 text-sm hover:underline">Show Answers</button>
+        <div id="quizAnswers" class="hidden text-xs text-gray-600 mt-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Owl Assistant -->
+<div id="owlAssistant" class="fixed bottom-5 right-5 z-50 w-72 bg-white border border-blue-300 shadow-2xl rounded-xl p-4 flex items-start space-x-3">
+  <img src="{{ url_for('static', filename='parwaaz.png') }}" alt="Owl" class="w-12 h-12 rounded-full">
+  <div class="flex-1">
+    <p id="owlMessage" class="text-sm text-gray-800 font-semibold">👋 I'm here if you need help picking a topic!</p>
+    <button onclick="dismissOwl()" class="text-xs text-blue-500 mt-2 hover:underline">Dismiss</button>
+  </div>
+</div>
+<!-- Scripts -->
+
+<!-- 🧠 JUST THE SCRIPT CHANGES NEEDED 🧠 -->
+
+<script>
+  let flashcards = [], flashIndex = 0, flipped = false;
+
+  // Typewriter Effect with MathJax
+  function typeHTMLContent(id, fullHTML, speed = 15, callback = null) {
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    let i = 0;
+    const interval = setInterval(() => {
+      el.innerHTML = fullHTML.slice(0, i);
+      i++;
+      if (i > fullHTML.length) {
+        clearInterval(interval);
+        if (window.MathJax) MathJax.typesetPromise();
+        if (callback) callback();
+      }
+    }, speed);
+  }
+
+  // Markdown Formatter
+  function formatMarkdown(text) {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+  }
+
+  // Flashcard Typing
+  function typeTextLineByLine(elId, lines, delay = 30, callback = null) {
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < lines.length) {
+        el.innerHTML += `<p>${lines[i]}</p>`;
+        i++;
+      } else {
+        clearInterval(interval);
+        if (callback) callback();
+      }
+    }, delay * 4);
+  }
+
+  // Flashcard Functions
+  function updateFlashcard() {
+    const card = flashcards[flashIndex];
+    flipped = false;
+    document.getElementById("flashcard").classList.remove("rotate-y-180");
+    document.getElementById("flashFront").innerHTML = card.term;
+    document.getElementById("flashBack").innerHTML = card.definition;
+    if (window.MathJax) MathJax.typesetPromise();
+    document.getElementById("flashIndex").textContent = `Card ${flashIndex + 1} of ${flashcards.length}`;
+  }
+
+  function flipFlashcard() {
+    flipped = !flipped;
+    document.getElementById("flashcard").classList.toggle("rotate-y-180", flipped);
+    const card = flashcards[flashIndex];
+    if (flipped) {
+      document.getElementById("flashBack").innerHTML = card.definition;
+      if (window.MathJax) MathJax.typesetPromise();
+    } else {
+      document.getElementById("flashFront").innerHTML = card.term;
+      if (window.MathJax) MathJax.typesetPromise();
+    }
+  }
+
+  function nextFlashcard() {
+    if (flashIndex < flashcards.length - 1) {
+      flashIndex++;
+      updateFlashcard();
+    }
+  }
+
+  function prevFlashcard() {
+    if (flashIndex > 0) {
+      flashIndex--;
+      updateFlashcard();
+    }
+  }
+
+  function parseFlashcards(raw) {
+    const cards = [];
+    const lines = raw.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].toLowerCase().includes("term:")) {
+        const term = lines[i].split(":")[1]?.trim() || "";
+        const explanation = lines[i + 1]?.split(":")[1]?.trim() || "";
+        cards.push({ term, definition: explanation });
+      }
+    }
+    return cards;
+  }
+
+  // Quiz Renderer
+  function renderQuizTyped(raw) {
+    const lines = raw.split('\n');
+    const quizBlock = document.getElementById("quizOutput");
+    const answersBlock = document.getElementById("quizAnswers");
+    quizBlock.innerHTML = '';
+    answersBlock.innerHTML = '';
+
+    let htmls = [];
+    let buffer = '';
+    let questionNum = 0;
+    let answerLine = '';
+    let isAnswerSection = false;
+
+    lines.forEach(line => {
+      line = line.trim();
+
+      if (line.toLowerCase().startsWith("answers:")) {
+        isAnswerSection = true;
+        return;
+      }
+
+      if (isAnswerSection) {
+        answerLine += line + ' ';
+        return;
+      }
+
+      if (line.startsWith("Q")) {
+        if (buffer) htmls.push(buffer);
+        questionNum++;
+        buffer = `<p class='font-semibold mt-2'>${line}</p>`;
+      } else if (line.match(/^[A-D]\./)) {
+        const name = 'q' + questionNum;
+        buffer += `<label class='block ml-4'><input type='radio' name='${name}' class='mr-2'> ${line}</label>`;
+      }
     });
-  </script>
+
+    if (buffer) htmls.push(buffer);
+
+    typeHTMLContent("quizOutput", htmls.join(''), 5);
+
+    const formatted = [...answerLine.matchAll(/(Q\d+):\s*([A-D])/g)].map(match => {
+      return `<li><strong>${match[1]}</strong>: ${match[2]}</li>`;
+    }).join('');
+
+    if (formatted) {
+      typeHTMLContent("quizAnswers", `<ul class='list-disc pl-5'>${formatted}</ul>`, 8);
+    }
+  }
+
+  function toggleAnswers() {
+    document.getElementById("quizAnswers").classList.toggle("hidden");
+  }
+
+  // Owl & Splash
+  function updateOwlMessage(msg) {
+    document.getElementById("owlMessage").textContent = msg;
+  }
+
+  function dismissOwl() {
+    document.getElementById("owlAssistant").classList.add("opacity-0");
+    setTimeout(() => document.getElementById("owlAssistant").style.display = "none", 300);
+  }
+
+  function hideSplash() {
+    document.getElementById("splashScreen").classList.add("opacity-0");
+    setTimeout(() => document.getElementById("splashScreen").style.display = "none", 700);
+  }
+
+  // GENERATE Button Handler
+  document.getElementById("generateBtn").addEventListener("click", function () {
+    const payload = {
+      grade: document.getElementById("gradeSelect").value,
+      subject: document.getElementById("subjectSelect").value,
+      prompt: document.getElementById("promptInput").value,
+      quiz_type: document.getElementById("quizTypeSelect").value,
+      quiz_count: document.getElementById("quizCountSelect").value,
+      flashcard_count: document.getElementById("flashCountSelect").value
+    };
+
+    updateOwlMessage("🧠 Generating content...");
+    document.getElementById("learnArea").classList.add("hidden");
+    document.getElementById("summaryOutput").textContent = "Typing...";
+    document.getElementById("quizOutput").innerHTML = "";
+    document.getElementById("quizAnswers").innerHTML = "";
+    document.getElementById("flashFront").textContent = "";
+    document.getElementById("flashBack").textContent = "";
+    document.getElementById("flashIndex").textContent = "";
+
+    fetch('/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("learnArea").classList.remove("hidden");
+      const formatted = formatMarkdown(data.summary);
+      typeHTMLContent("summaryOutput", formatted, 10);
+      renderQuizTyped(data.quiz);
+      flashcards = parseFlashcards(data.flashcards);
+      flashIndex = 0;
+      updateFlashcard();
+      updateOwlMessage("✅ Lesson ready! Flip cards or try the quiz.");
+    })
+    .catch(error => {
+      console.error(error);
+      alert("Something went wrong!");
+    });
+  });
+</script>
+
+  
 </body>
 </html>

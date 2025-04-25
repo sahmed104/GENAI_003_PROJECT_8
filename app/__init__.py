@@ -7,7 +7,8 @@ def create_app():
 
     # Force Flask to use absolute path to templates folder
     template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
-    app = Flask(__name__, template_folder=template_dir)
+    static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static'))
+    app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
     from .routes import main
     app.register_blueprint(main)

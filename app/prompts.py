@@ -20,6 +20,10 @@ Instructions:
 - Label steps like Step 1, Step 2, etc.
 - Verify the solution at the end.
 - Box the final answer clearly.
+- Format all math expressions using LaTeX.
+- Wrap inline math expressions like fractions, determinants, or variables in \( ... \).
+- Wrap standalone or long equations in \[ ... \].
+- Use \lambda instead of λ, \cdot for dot products, and escape math symbols properly.
 {shared_instructions}
 
 Prompt: {topic}
