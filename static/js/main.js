@@ -78,43 +78,148 @@ updateFlashcard();
 }
 }
 
-function parseFlashcards(raw) {
-  const cards = [];
-  const lines = raw.split('\n');
+function cleanLines(raw) {
+  return raw.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+}
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+function smartParseFlashcards(raw) {
+  const lines = cleanLines(raw);
 
-    // Format 1: Numbered + Explicit Explanation line (old format)
-    if (/^\d+\.\s+/.test(line)) {
-      const termPart = line.replace(/^\d+\.\s*/, '').trim();
-      const nextLine = lines[i + 1]?.trim();
-      if (nextLine?.toLowerCase().startsWith("explanation:")) {
-        const explanation = nextLine.split(":").slice(1).join(":").trim();
-        cards.push({ term: termPart, definition: explanation });
-        i++; // skip explanation line
-        continue;
-      }
-      // NEW HANDLING: If no explicit Explanation line, but there is colon inside the termPart itself
-      if (termPart.includes(':')) {
-        const [term, explanation] = termPart.split(':').map(x => x.trim());
-        cards.push({ term, definition: explanation });
-        continue;
-      }
-    }
+  const parsers = [
+    parseNumberedExplanationStyle,
+    parseMeaningExampleStyle,
+    parseSimpleTermColonExplanation,
+    parseBulletStyle,
+    parsePlainSentenceStyle,
+    parseMarkdownStyle,
+    mixedParserStyle
+  ];
 
-    // Format 2: Term: Explanation separate (rare case)
-    if (line.toLowerCase().startsWith("term:")) {
-      const term = line.split(":").slice(1).join(":").trim();
-      const nextLine = lines[i + 1]?.trim();
-      if (nextLine?.toLowerCase().startsWith("explanation:")) {
-        const explanation = nextLine.split(":").slice(1).join(":").trim();
-        cards.push({ term, definition: explanation });
-        i++;
-      }
+  for (const parser of parsers) {
+    const result = parser(lines);
+    if (result && result.length > 0 && !result[0].term.includes("Error")) {
+      console.log(`Parsed using: ${parser.name}`);
+      return result;
     }
   }
 
+  return [{ term: "⚡ Error", definition: "Could not parse flashcards. Please regenerate." }];
+}
+
+function parseNumberedExplanationStyle(lines) {
+  const cards = [];
+  let currentTerm = null;
+  lines.forEach((line) => {
+    if (/^\d+\.\s+/.test(line)) {
+      if (currentTerm) cards.push(currentTerm);
+      currentTerm = { term: line.replace(/^\d+\.\s*/, ''), definition: '' };
+    }
+    else if (line.toLowerCase().startsWith('explanation:') && currentTerm) {
+      currentTerm.definition = line.split(':').slice(1).join(':').trim();
+    }
+  });
+  if (currentTerm) cards.push(currentTerm);
+  return cards;
+}
+
+function parseMeaningExampleStyle(lines) {
+  const cards = [];
+  let currentTerm = null, currentMeaning = null, currentExample = null;
+  lines.forEach((line) => {
+    if (/^\d+\.\s+/.test(line)) {
+      if (currentTerm && currentMeaning) {
+        cards.push({ term: currentTerm, definition: currentMeaning + (currentExample ? "<br><strong>Example:</strong> " + currentExample : '') });
+      }
+      currentTerm = line.replace(/^\d+\.\s*/, '');
+      currentMeaning = null;
+      currentExample = null;
+    }
+    else if (line.toLowerCase().startsWith('meaning:') && currentTerm) {
+      currentMeaning = line.split(':').slice(1).join(':').trim();
+    }
+    else if (line.toLowerCase().startsWith('example:') && currentTerm) {
+      currentExample = line.split(':').slice(1).join(':').trim();
+    }
+  });
+  if (currentTerm && currentMeaning) {
+    cards.push({ term: currentTerm, definition: currentMeaning + (currentExample ? "<br><strong>Example:</strong> " + currentExample : '') });
+  }
+  return cards;
+}
+
+function parseSimpleTermColonExplanation(lines) {
+  const cards = [];
+  lines.forEach((line) => {
+    if (line.includes(':')) {
+      const parts = line.split(':');
+      if (parts.length >= 2) {
+        cards.push({ term: parts[0].trim(), definition: parts.slice(1).join(':').trim() });
+      }
+    }
+  });
+  return cards;
+}
+
+function parseBulletStyle(lines) {
+  const cards = [];
+  lines.forEach((line) => {
+    if (/^[•*-]\s+/.test(line)) {
+      const cleanLine = line.replace(/^[•*-]\s*/, '');
+      const parts = cleanLine.split(':');
+      if (parts.length >= 2) {
+        cards.push({ term: parts[0].trim(), definition: parts.slice(1).join(':').trim() });
+      }
+    }
+  });
+  return cards;
+}
+
+function parsePlainSentenceStyle(lines) {
+  const cards = [];
+  lines.forEach((line) => {
+    if (line.includes('means')) {
+      const parts = line.split('means');
+      cards.push({ term: parts[0].trim(), definition: parts[1].trim() });
+    }
+  });
+  return cards;
+}
+
+function parseMarkdownStyle(lines) {
+  const cards = [];
+  let currentTerm = null;
+  lines.forEach((line) => {
+    if (line.startsWith('###')) {
+      if (currentTerm) cards.push(currentTerm);
+      currentTerm = { term: line.replace('###', '').trim(), definition: '' };
+    }
+    else if (line.toLowerCase().startsWith('**explanation:**') && currentTerm) {
+      currentTerm.definition = line.split('**explanation:**')[1].trim();
+    }
+  });
+  if (currentTerm) cards.push(currentTerm);
+  return cards;
+}
+
+function mixedParserStyle(lines) {
+  const cards = [];
+  let tempTerm = null;
+  lines.forEach((line) => {
+    if (line.length <= 4 && /^\d+$/.test(line)) {
+      // Likely a broken number, ignore
+    }
+    else if (line.length < 20) {
+      // Short term name
+      tempTerm = line;
+    }
+    else if (tempTerm) {
+      // Following long text is explanation
+      cards.push({ term: tempTerm, definition: line });
+      tempTerm = null;
+    }
+  });
   return cards;
 }
 
@@ -279,7 +384,7 @@ document.getElementById("generateBtn").addEventListener("click", function () {
     const formatted = formatMarkdown(data.summary);
     typeHTMLContent("summaryOutput", formatted, 10);
     renderQuizTyped(data.quiz);
-    flashcards = parseFlashcards(data.flashcards);
+    flashcards = smartParseFlashcards(data.flashcards);
     flashIndex = 0;
     updateFlashcard();
     updateOwlMessage("Lesson ready! Flip cards or try the quiz.");

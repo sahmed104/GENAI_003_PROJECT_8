@@ -316,8 +316,16 @@ Guidelines:
 - Each card should focus only on content relevant to the prompt: "{topic}"
 - Each card has a term/concept and a 1–2 sentence explanation.
 - Use analogies or simple examples where helpful.
-"""
+- STRICT FORMAT:
+    1. Term
+    Explanation: (1–2 sentences)
 
+    2. Term
+    Explanation: (1–2 sentences)
+
+- Do NOT add extra commentary, intros, or summaries.
+- Only list flashcards.
+"""
     intro = f"You are a {subject} teacher creating {count} flashcards for a grade {grade} student based on this prompt:\n\nPrompt: {topic}"
 
     if subject == "math":
