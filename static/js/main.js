@@ -111,18 +111,40 @@ function smartParseFlashcards(raw) {
 function parseNumberedExplanationStyle(lines) {
   const cards = [];
   let currentTerm = null;
+  let waitingForExplanation = false;
+
   lines.forEach((line) => {
     if (/^\d+\.\s+/.test(line)) {
-      if (currentTerm) cards.push(currentTerm);
-      currentTerm = { term: line.replace(/^\d+\.\s*/, ''), definition: '' };
+      // If previous term is ready, push it
+      if (currentTerm && currentTerm.definition) {
+        cards.push(currentTerm);
+      }
+      currentTerm = { term: line.replace(/^\d+\.\s*/, '').trim(), definition: '' };
+      waitingForExplanation = true;
     }
-    else if (line.toLowerCase().startsWith('explanation:') && currentTerm) {
-      currentTerm.definition = line.split(':').slice(1).join(':').trim();
+    else if (waitingForExplanation && currentTerm) {
+      // Accept the next line as explanation directly if no "Explanation:" keyword
+      if (line.toLowerCase().startsWith('explanation:')) {
+        const parts = line.split(/:(.+)/);
+        if (parts.length >= 2) {
+          currentTerm.definition = parts[1].trim();
+        }
+      } else {
+        // Normal line, take it fully as explanation
+        currentTerm.definition = line.trim();
+      }
+      waitingForExplanation = false;
     }
   });
-  if (currentTerm) cards.push(currentTerm);
+
+  // Final push
+  if (currentTerm && currentTerm.definition) {
+    cards.push(currentTerm);
+  }
+
   return cards;
 }
+
 
 function parseMeaningExampleStyle(lines) {
   const cards = [];
