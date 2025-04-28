@@ -141,7 +141,7 @@ def parse_quiz_output(raw_quiz):
 
     return questions, answers
 
-# ⚡ Signup
+# Signup
 @main.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -154,7 +154,7 @@ def signup():
             return f"Error creating user: {e}"
     return render_template('signup.html')
 
-# ⚡ Login
+# Login
 from flask import flash
 
 @main.route('/login', methods=['GET', 'POST'])
@@ -176,13 +176,13 @@ def login():
     return render_template('login.html', active_page='login')
 
 
-# ⚡ Logout
+# Logout
 @main.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('main.index'))
 
-# ⚡ Profile Page
+# Profile Page
 @main.route('/profile')
 def profile():
     user_id = session.get('user_id')
@@ -195,12 +195,12 @@ def profile():
     # Convert to dicts
     history = [dict(row) for row in history]
 
-    # 🔥 Correct the timezone for New York (UTC-4)
+    # Correct the timezone for New York (UTC-4)
     for quiz in history:
         if 'date_time' in quiz and quiz['date_time']:
             try:
                 dt_obj = datetime.strptime(quiz['date_time'], "%Y-%m-%d %H:%M:%S")
-                dt_local = dt_obj - timedelta(hours=4)  # 👈 Subtract 4 hours
+                dt_local = dt_obj - timedelta(hours=4)  # Subtract 4 hours
                 quiz['pretty_date'] = dt_local.strftime("%B %d, %Y - %I:%M %p")
             except Exception as e:
                 print(f"Error parsing date: {e}")
@@ -226,7 +226,7 @@ def profile():
 
     return render_template('profile.html', user=user, history=history, level=level, next_level_xp=next_level_xp, badge=badge, next_badge=next_badge, active_page='profile')
 
-# ⚡ Save Quiz Result (AJAX call after modal quiz)
+# Save Quiz Result (AJAX call after modal quiz)
 @main.route('/save_quiz_result', methods=['POST'])
 def save_result():
     if 'user_id' not in session:
@@ -244,15 +244,15 @@ def save_result():
     return jsonify({'message': 'Result saved'})
 
 
-# ⚡ Leaderboard Page
+# Leaderboard Page
 @main.route('/leaderboard')
 def leaderboard():
     top_users = get_leaderboard()
 
-    # 🔥 Convert Rows to dicts
+    # Convert Rows to dicts
     top_users = [dict(user) for user in top_users]
 
-    # 🧠 Now safe to assign badges
+    # Now safe to assign badges
     def get_badge(xp):
         if xp >= 500:
             return "🏆 Champion"
@@ -271,3 +271,13 @@ def leaderboard():
 @main.route('/check_login_status')
 def check_login_status():
     return jsonify({"logged_in": 'user_id' in session})
+
+from flask import send_from_directory
+
+@main.route('/favicon.ico')
+def favicon():
+    return send_from_directory(
+        os.path.join(current_app.root_path, 'static'),
+        'favicon.ico',
+        mimetype='image/vnd.microsoft.icon'
+    )

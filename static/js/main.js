@@ -270,7 +270,7 @@ document.getElementById("generateBtn").addEventListener("click", function () {
   })
   .then(res => res.json())
   .then(data => {
-    // ✅ Restore Button
+    // Restore Button
     generateBtn.disabled = false;
     generateBtn.innerHTML = "Generate";
     generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -282,14 +282,14 @@ document.getElementById("generateBtn").addEventListener("click", function () {
     flashcards = parseFlashcards(data.flashcards);
     flashIndex = 0;
     updateFlashcard();
-    updateOwlMessage("✅ Lesson ready! Flip cards or try the quiz.");
+    updateOwlMessage("Lesson ready! Flip cards or try the quiz.");
     document.getElementById("takeQuizSection").classList.remove("hidden");
   })
   .catch(error => {
     console.error(error);
     showParwaazToast("Something went wrong while generating!");
 
-    // ✅ Restore Button on Error too
+    // Restore Button on Error too
     generateBtn.disabled = false;
     generateBtn.innerHTML = "Generate";
     generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -323,7 +323,7 @@ function closeQuizModal() {
   document.getElementById("resultArea").classList.add("hidden");
 }
 
-// 🚀 Start Quiz (inside Modal)
+// Start Quiz (inside Modal)
 function startModalQuiz() {
   document.getElementById("startQuizBtn").classList.add("hidden");
   document.getElementById("loadingSpinner").classList.remove("hidden");
@@ -351,7 +351,7 @@ function startModalQuiz() {
     });
 }
 
-// 🚀 Timer
+// Timer
 function startModalTimer() {
   timeLeft = 60;
   document.getElementById("timer").textContent = `${timeLeft}s`;
@@ -367,7 +367,7 @@ function startModalTimer() {
   }, 1000);
 }
 
-// 🚀 Show Question
+// Show Question
 function showModalQuestion() {
   const questionObj = quickQuizQuestions[currentQuestionIndex];
   document.getElementById("questionText").innerHTML = `<strong>Q${currentQuestionIndex + 1}:</strong> ${questionObj.question}`;
@@ -387,13 +387,13 @@ function showModalQuestion() {
   updateModalNavButtons();
 }
 
-// 🚀 Nav Buttons
+// Nav Buttons
 function updateModalNavButtons() {
   document.getElementById("prevBtn").disabled = (currentQuestionIndex === 0);
   document.getElementById("nextBtn").textContent = (currentQuestionIndex === quickQuizQuestions.length - 1) ? "Submit" : "Next";
 }
 
-// 🚀 Next Question
+// Next Question
 function nextQuestion() {
   const selected = document.querySelector('input[name="option"]:checked');
   if (!selected) {
@@ -412,7 +412,7 @@ function nextQuestion() {
   }
 }
 
-// 🚀 Previous Question
+// Previous Question
 function prevQuestion() {
   if (currentQuestionIndex > 0) {
     currentQuestionIndex--;
@@ -420,7 +420,7 @@ function prevQuestion() {
   }
 }
 
-// 🚀 Submit
+// Submit
 function submitModalQuiz() {
   document.getElementById("quizArea").classList.add("hidden");
   document.getElementById("resultArea").classList.remove("hidden");
@@ -433,7 +433,7 @@ function submitModalQuiz() {
   });
 
   document.getElementById("scoreText").textContent = `🎯 You scored ${score} out of ${quickQuizQuestions.length}!`;
-  // 🚀 Save score to backend
+  // Save score to backend
   fetch('/save_quiz_result', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -447,7 +447,7 @@ function submitModalQuiz() {
 
 }
 
-// 🚀 Retry
+// Retry
 function retryQuiz() {
   closeQuizModal();
   openQuizModal();
@@ -462,7 +462,7 @@ function handleBegin() {
         hideSplash();
       } else {
         // Show Parwaaz Toast nicely
-        showParwaazToast("🔒 Please login first to start your learning journey!");
+        showParwaazToast("Please login first to start your learning journey!");
 
         // After 1.5 seconds, redirect to login
         setTimeout(() => {
