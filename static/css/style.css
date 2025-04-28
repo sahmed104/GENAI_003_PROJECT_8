@@ -25,3 +25,16 @@
   display: block !important;
   animation: slideDown 0.4s ease-out forwards;
 }
+.loader {
+  border-top-color: #3490dc;
+  animation: spinner 0.6s linear infinite;
+}
+@keyframes spinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#quizModal {
+  background: rgba(0, 0, 0, 0.6); /* Stronger dark blur */
+  backdrop-filter: blur(4px); /* Soft background blur */
+}

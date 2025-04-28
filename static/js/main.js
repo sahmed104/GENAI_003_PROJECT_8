@@ -79,46 +79,43 @@ updateFlashcard();
 }
 
 function parseFlashcards(raw) {
-const cards = [];
-const lines = raw.split('\n');
+  const cards = [];
+  const lines = raw.split('\n');
 
-for (let i = 0; i < lines.length; i++) {
-const line = lines[i].trim();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
 
-// Format 1: Numbered format - "1. Term"
-if (/^\d+\.\s+/.test(line)) {
-const term = line.replace(/^\d+\.\s+/, '').trim();
-const nextLine = lines[i + 1]?.trim();
-if (nextLine?.toLowerCase().startsWith("explanation:")) {
-  const explanation = nextLine.split(":").slice(1).join(":").trim();
-  cards.push({ term, definition: explanation });
-  i++;
-  continue;
-}
-}
+    // Format 1: Numbered + Explicit Explanation line (old format)
+    if (/^\d+\.\s+/.test(line)) {
+      const termPart = line.replace(/^\d+\.\s*/, '').trim();
+      const nextLine = lines[i + 1]?.trim();
+      if (nextLine?.toLowerCase().startsWith("explanation:")) {
+        const explanation = nextLine.split(":").slice(1).join(":").trim();
+        cards.push({ term: termPart, definition: explanation });
+        i++; // skip explanation line
+        continue;
+      }
+      // NEW HANDLING: If no explicit Explanation line, but there is colon inside the termPart itself
+      if (termPart.includes(':')) {
+        const [term, explanation] = termPart.split(':').map(x => x.trim());
+        cards.push({ term, definition: explanation });
+        continue;
+      }
+    }
 
-// Format 2: Term: Explanation:
-if (line.toLowerCase().startsWith("term:")) {
-const term = line.split(":").slice(1).join(":").trim();
-const nextLine = lines[i + 1]?.trim();
-if (nextLine?.toLowerCase().startsWith("explanation:")) {
-  const explanation = nextLine.split(":").slice(1).join(":").trim();
-  cards.push({ term, definition: explanation });
-  i++;
-  continue;
-}
-}
+    // Format 2: Term: Explanation separate (rare case)
+    if (line.toLowerCase().startsWith("term:")) {
+      const term = line.split(":").slice(1).join(":").trim();
+      const nextLine = lines[i + 1]?.trim();
+      if (nextLine?.toLowerCase().startsWith("explanation:")) {
+        const explanation = nextLine.split(":").slice(1).join(":").trim();
+        cards.push({ term, definition: explanation });
+        i++;
+      }
+    }
+  }
 
-// Format 3: Term - Explanation on same line
-if (/^.*term.*:.*explanation.*:/i.test(line)) {
-const [_, termPart, explanationPart] = line.match(/term\s*:\s*(.*?)\s*-+\s*explanation\s*:\s*(.*)/i) || [];
-if (termPart && explanationPart) {
-  cards.push({ term: termPart.trim(), definition: explanationPart.trim() });
-}
-}
-}
-
-return cards;
+  return cards;
 }
 
 // Quiz Renderer
@@ -269,9 +266,155 @@ flashcards = parseFlashcards(data.flashcards);
 flashIndex = 0;
 updateFlashcard();
 updateOwlMessage("✅ Lesson ready! Flip cards or try the quiz.");
+document.getElementById("takeQuizSection").classList.remove("hidden");
+
 })
 .catch(error => {
 console.error(error);
 alert("Something went wrong!");
 });
 });
+
+
+let quickQuizQuestions = [];
+let currentQuestionIndex = 0;
+let userAnswers = [];
+let timerInterval;
+let timeLeft = 60;
+
+// MODAL: Open
+function openQuizModal() {
+  document.getElementById("quizModal").classList.remove("hidden");
+  document.getElementById("mainContent").classList.add("blur-sm");
+}
+
+// MODAL: Close
+function closeQuizModal() {
+  clearInterval(timerInterval);
+  document.getElementById("quizModal").classList.add("hidden");
+  document.getElementById("mainContent").classList.remove("blur-sm");
+
+  // Reset state
+  document.getElementById("startQuizBtn").classList.remove("hidden");
+  document.getElementById("loadingSpinner").classList.add("hidden");
+  document.getElementById("quizArea").classList.add("hidden");
+  document.getElementById("resultArea").classList.add("hidden");
+}
+
+// 🚀 Start Quiz (inside Modal)
+function startModalQuiz() {
+  document.getElementById("startQuizBtn").classList.add("hidden");
+  document.getElementById("loadingSpinner").classList.remove("hidden");
+
+  fetch('/generate_quiz', { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        alert("Failed to load quiz. Try again!");
+        return;
+      }
+
+      quickQuizQuestions = data.questions;
+      currentQuestionIndex = 0;
+      userAnswers = [];
+
+      document.getElementById("loadingSpinner").classList.add("hidden");
+      document.getElementById("quizArea").classList.remove("hidden");
+      showModalQuestion();
+      startModalTimer();
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Failed to load quiz. Please try again.");
+    });
+}
+
+// 🚀 Timer
+function startModalTimer() {
+  timeLeft = 60;
+  document.getElementById("timer").textContent = `${timeLeft}s`;
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timer").textContent = `${timeLeft}s`;
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      submitModalQuiz();
+    }
+  }, 1000);
+}
+
+// 🚀 Show Question
+function showModalQuestion() {
+  const questionObj = quickQuizQuestions[currentQuestionIndex];
+  document.getElementById("questionText").innerHTML = `<strong>Q${currentQuestionIndex + 1}:</strong> ${questionObj.question}`;
+
+  const optionsHtml = questionObj.options.map(opt => {
+    const optionValue = opt.charAt(0);
+    const checked = userAnswers[currentQuestionIndex] === optionValue ? 'checked' : '';
+    return `
+      <label class="block p-2 border rounded mb-2 cursor-pointer">
+        <input type="radio" name="option" value="${optionValue}" ${checked} class="mr-2">${opt}
+      </label>
+    `;
+  }).join('');
+
+  document.getElementById("optionsContainer").innerHTML = optionsHtml;
+
+  updateModalNavButtons();
+}
+
+// 🚀 Nav Buttons
+function updateModalNavButtons() {
+  document.getElementById("prevBtn").disabled = (currentQuestionIndex === 0);
+  document.getElementById("nextBtn").textContent = (currentQuestionIndex === quickQuizQuestions.length - 1) ? "Submit" : "Next";
+}
+
+// 🚀 Next Question
+function nextQuestion() {
+  const selected = document.querySelector('input[name="option"]:checked');
+  if (!selected) {
+    alert("Please select an answer!");
+    return;
+  }
+
+  userAnswers[currentQuestionIndex] = selected.value;
+
+  if (currentQuestionIndex < quickQuizQuestions.length - 1) {
+    currentQuestionIndex++;
+    showModalQuestion();
+  } else {
+    clearInterval(timerInterval);
+    submitModalQuiz();
+  }
+}
+
+// 🚀 Previous Question
+function prevQuestion() {
+  if (currentQuestionIndex > 0) {
+    currentQuestionIndex--;
+    showModalQuestion();
+  }
+}
+
+// 🚀 Submit
+function submitModalQuiz() {
+  document.getElementById("quizArea").classList.add("hidden");
+  document.getElementById("resultArea").classList.remove("hidden");
+
+  let score = 0;
+  quickQuizQuestions.forEach((q, idx) => {
+    if (userAnswers[idx] && userAnswers[idx] === q.answer) {
+      score++;
+    }
+  });
+
+  document.getElementById("scoreText").textContent = `🎯 You scored ${score} out of ${quickQuizQuestions.length}!`;
+}
+
+// 🚀 Retry
+function retryQuiz() {
+  closeQuizModal();
+  openQuizModal();
+}
