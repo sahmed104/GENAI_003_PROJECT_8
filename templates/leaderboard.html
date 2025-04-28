@@ -1,0 +1,56 @@
+<!-- leaderboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Leaderboard - Parwaaz</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+ <!-- Navigation Bar -->
+<nav class="bg-white shadow mb-4 p-4 flex justify-between items-center sticky top-0 z-50">
+  <div class="flex items-center space-x-3">
+    <img src="{{ url_for('static', filename='parwaaz.png') }}" alt="Logo" class="w-10">
+    <a href="/" class="font-bold text-xl text-blue-700">Parwaaz</a>
+  </div>
+
+  <div class="space-x-6 text-sm font-semibold flex items-center">
+    <a href="/" class="{{ 'text-blue-600 font-bold' if active_page == 'home' else 'text-gray-700 hover:text-blue-600' }}">Home</a>
+
+    {% if session.get('user_id') %}
+      <a href="/profile" class="{{ 'text-blue-600 font-bold' if active_page == 'profile' else 'text-gray-700 hover:text-blue-600' }}">Profile</a>
+      <a href="/leaderboard" class="{{ 'text-blue-600 font-bold' if active_page == 'leaderboard' else 'text-gray-700 hover:text-blue-600' }}">Leaderboard</a>
+      <a href="/logout" class="text-red-600 hover:text-red-800">Logout</a>
+    {% else %}
+      <a href="/login" class="{{ 'text-blue-600 font-bold' if active_page == 'login' else 'text-gray-700 hover:text-blue-600' }}">Login</a>
+      <a href="/signup" class="{{ 'text-blue-600 font-bold' if active_page == 'signup' else 'text-gray-700 hover:text-blue-600' }}">Signup</a>
+    {% endif %}
+  </div>
+</nav>
+
+<div class="flex flex-col items-center justify-center min-h-screen p-4">
+
+  <img src="{{ url_for('static', filename='parwaaz.png') }}" class="w-24 mb-4">
+  <h1 class="text-3xl font-bold text-purple-700 mb-6">🏆 Top Parwaaz Flyers</h1>
+
+  <div class="bg-white shadow rounded-xl p-6 w-full max-w-md">
+    {% for user in top_users %}
+  <div class="bg-gray-100 p-4 rounded-lg shadow flex justify-between items-center">
+    <div class="flex items-center space-x-2">
+      <span class="font-bold">{{ loop.index }}.</span>
+      <span class="text-gray-800">{{ user.username }}</span>
+      <span class="text-sm">{{ user.badge }}</span>
+    </div>
+    <div class="text-blue-600 font-semibold">
+      {{ user.xp }} XP
+    </div>
+  </div>    
+  {% else %}
+      <p class="text-gray-500">No players yet!</p>
+    {% endfor %}
+  </div>  
+
+</div>
+</body>
+</html>

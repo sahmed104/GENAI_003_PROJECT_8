@@ -1,6 +1,8 @@
 from app import create_app
+from app.models import init_db
 
 app = create_app()
+init_db() 
 
 # DEBUG: print all routes
 print("Registered routes:")

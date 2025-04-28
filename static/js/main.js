@@ -218,62 +218,84 @@ toast.classList.add("hidden");
 
 // GENERATE Button Handler
 document.getElementById("generateBtn").addEventListener("click", function () {
-const grade = document.getElementById("gradeSelect").value;
-const subject = document.getElementById("subjectSelect").value;
-const prompt = document.getElementById("promptInput").value.trim();
-const quiz_type = document.getElementById("quizTypeSelect").value;
-const quiz_count = document.getElementById("quizCountSelect").value;
-const flashcard_count = document.getElementById("flashCountSelect").value;
+  const generateBtn = document.getElementById("generateBtn");
 
-// Validate all required fields
-if (!grade || !subject || !prompt || !quiz_type || !quiz_count || !flashcard_count) {
-showParwaazToast("Please fill out all fields before generating content.");
-return;
-}
+  const grade = document.getElementById("gradeSelect").value;
+  const subject = document.getElementById("subjectSelect").value;
+  const prompt = document.getElementById("promptInput").value.trim();
+  const quiz_type = document.getElementById("quizTypeSelect").value;
+  const quiz_count = document.getElementById("quizCountSelect").value;
+  const flashcard_count = document.getElementById("flashCountSelect").value;
 
-const payload = {
-grade,
-subject,
-prompt,
-quiz_type,
-quiz_count,
-flashcard_count
-};
+  // Validate all required fields
+  if (!grade || !subject || !prompt || !quiz_type || !quiz_count || !flashcard_count) {
+    showParwaazToast("Please fill out all fields before generating content.");
+    return;
+  }
 
-// Continue with generation...
-updateOwlMessage("🧠 Generating content...");
-document.getElementById("learnArea").classList.add("hidden");
-document.getElementById("summaryOutput").textContent = "Typing...";
-document.getElementById("quizOutput").innerHTML = "";
-document.getElementById("quizAnswers").innerHTML = "";
-document.getElementById("quizAnswers").classList.add("hidden");
-document.getElementById("flashFront").textContent = "";
-document.getElementById("flashBack").textContent = "";
-document.getElementById("flashIndex").textContent = "";
+  const payload = {
+    grade,
+    subject,
+    prompt,
+    quiz_type,
+    quiz_count,
+    flashcard_count
+  };
 
-fetch('/generate', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify(payload)
-})
-.then(res => res.json())
-.then(data => {
-document.getElementById("learnArea").classList.remove("hidden");
-const formatted = formatMarkdown(data.summary);
-typeHTMLContent("summaryOutput", formatted, 10);
-renderQuizTyped(data.quiz);
-flashcards = parseFlashcards(data.flashcards);
-flashIndex = 0;
-updateFlashcard();
-updateOwlMessage("✅ Lesson ready! Flip cards or try the quiz.");
-document.getElementById("takeQuizSection").classList.remove("hidden");
+  // 🚀 Disable Generate Button and Show Spinner
+  generateBtn.disabled = true;
+  generateBtn.innerHTML = `
+    <svg class="animate-spin h-5 w-5 mr-2 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+    </svg>
+    Generating...
+  `;
+  generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-})
-.catch(error => {
-console.error(error);
-alert("Something went wrong!");
+  updateOwlMessage("🧠 Generating content...");
+  document.getElementById("learnArea").classList.add("hidden");
+  document.getElementById("summaryOutput").textContent = "Typing...";
+  document.getElementById("quizOutput").innerHTML = "";
+  document.getElementById("quizAnswers").innerHTML = "";
+  document.getElementById("quizAnswers").classList.add("hidden");
+  document.getElementById("flashFront").textContent = "";
+  document.getElementById("flashBack").textContent = "";
+  document.getElementById("flashIndex").textContent = "";
+
+  fetch('/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    // ✅ Restore Button
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = "Generate";
+    generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+    document.getElementById("learnArea").classList.remove("hidden");
+    const formatted = formatMarkdown(data.summary);
+    typeHTMLContent("summaryOutput", formatted, 10);
+    renderQuizTyped(data.quiz);
+    flashcards = parseFlashcards(data.flashcards);
+    flashIndex = 0;
+    updateFlashcard();
+    updateOwlMessage("✅ Lesson ready! Flip cards or try the quiz.");
+    document.getElementById("takeQuizSection").classList.remove("hidden");
+  })
+  .catch(error => {
+    console.error(error);
+    showParwaazToast("Something went wrong while generating!");
+
+    // ✅ Restore Button on Error too
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = "Generate";
+    generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  });
 });
-});
+
 
 
 let quickQuizQuestions = [];
@@ -411,10 +433,45 @@ function submitModalQuiz() {
   });
 
   document.getElementById("scoreText").textContent = `🎯 You scored ${score} out of ${quickQuizQuestions.length}!`;
+  // 🚀 Save score to backend
+  fetch('/save_quiz_result', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      score: score,
+      total: quickQuizQuestions.length,
+      questions: quickQuizQuestions,  // Pass full questions
+      user_answers: userAnswers        // Pass user answers
+    })
+  });
+
 }
 
 // 🚀 Retry
 function retryQuiz() {
   closeQuizModal();
   openQuizModal();
+}
+
+
+function handleBegin() {
+  fetch('/check_login_status')
+    .then(response => response.json())
+    .then(data => {
+      if (data.logged_in) {
+        hideSplash();
+      } else {
+        // Show Parwaaz Toast nicely
+        showParwaazToast("🔒 Please login first to start your learning journey!");
+
+        // After 1.5 seconds, redirect to login
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
+      }
+    })
+    .catch(error => {
+      console.error('Error checking login status:', error);
+      window.location.href = "/login"; // fallback
+    });
 }

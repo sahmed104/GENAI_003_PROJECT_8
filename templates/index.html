@@ -22,9 +22,48 @@
 <div id="splashScreen" class="fixed inset-0 z-50 bg-gray-100 flex flex-col items-center justify-center text-center transition-opacity duration-700">
   <img src="{{ url_for('static', filename='parwaaz.png') }}" alt="Parwaaz Owl" class="w-36 mb-4 drop-shadow-xl">
   <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome to Parwaaz</h1>
-  <p class="text-gray-600 mb-6">Your AI learning companion</p>
-  <button onclick="hideSplash()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded shadow">Let’s Begin</button>
+  <p class="text-gray-600 mb-6">Your AI Learning Companion</p>
+
+  {% if session.get('user_id') %}
+    <!-- User is logged in: Show Let's Begin -->
+    <button onclick="handleBegin()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded shadow mb-3 transition transform hover:scale-105">
+      Let’s Begin
+    </button>
+  {% else %}
+    <!-- User not logged in: Show Login + Sign Up -->
+    <div class="flex gap-4 mt-2">
+      <a href="/login" class="bg-white border border-blue-600 text-blue-600 font-semibold px-4 py-2 rounded shadow hover:bg-gray-100 transition transform hover:scale-105">
+        Login
+      </a>
+      <a href="/signup" class="bg-white border border-blue-600 text-blue-600 font-semibold px-4 py-2 rounded shadow hover:bg-gray-100 transition transform hover:scale-105">
+        Sign Up
+      </a>
+    </div>
+  {% endif %}
 </div>
+
+<!-- Navigation Bar -->
+<nav class="bg-white shadow mb-4 p-4 flex justify-between items-center sticky top-0 z-50">
+  <div class="flex items-center space-x-3">
+    <img src="{{ url_for('static', filename='parwaaz.png') }}" alt="Logo" class="w-10">
+    <a href="/" class="font-bold text-xl text-blue-700">Parwaaz</a>
+  </div>
+
+  <div class="space-x-6 text-sm font-semibold flex items-center">
+    <a href="/" class="{{ 'text-blue-600 font-bold' if active_page == 'home' else 'text-gray-700 hover:text-blue-600' }}">Home</a>
+
+    {% if session.get('user_id') %}
+      <a href="/profile" class="{{ 'text-blue-600 font-bold' if active_page == 'profile' else 'text-gray-700 hover:text-blue-600' }}">Profile</a>
+      <a href="/leaderboard" class="{{ 'text-blue-600 font-bold' if active_page == 'leaderboard' else 'text-gray-700 hover:text-blue-600' }}">Leaderboard</a>
+      <a href="/logout" class="text-red-600 hover:text-red-800">Logout</a>
+    {% else %}
+      <a href="/login" class="{{ 'text-blue-600 font-bold' if active_page == 'login' else 'text-gray-700 hover:text-blue-600' }}">Login</a>
+      <a href="/signup" class="{{ 'text-blue-600 font-bold' if active_page == 'signup' else 'text-gray-700 hover:text-blue-600' }}">Signup</a>
+    {% endif %}
+  </div>
+</nav>
+
+
 
 <!-- Header -->
 <div class="max-w-6xl mx-auto px-6 py-10">
@@ -33,62 +72,61 @@
     <h1 class="text-3xl font-bold text-gray-800">Learn. Fly. Rise.</h1>
   </div>
 
-
 <!-- Input Form -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-    <div>
-      <label class="text-sm font-medium">Grade</label>
-      <select id="gradeSelect" class="w-full border px-3 py-2 rounded">
-        <option value="">Select</option><option>6</option><option>7</option><option>8</option>
-      </select>
-    </div>
-    <div>
-      <label class="text-sm font-medium">Subject</label>
-      <select id="subjectSelect" class="w-full border px-3 py-2 rounded">
-        <option value="">Select</option>
-        <option>Math</option>
-        <option>Science</option>
-        <option>English</option>
-        <option>History</option>
-        <option>Geography</option>
-        <option>Foreign Language</option>
-        <option>Computer Science</option>
-        <option>Economics</option>
-        <option>Art</option>
-        <option>Music</option>
-        <option>Health</option>
-        <option>Physical Education</option>
-      </select>
-    </div>
-    <div class="md:col-span-2">
-      <label class="text-sm font-medium">Topic</label>
-      <input id="promptInput" class="w-full border px-3 py-2 rounded" placeholder="e.g. Photosynthesis, Fractions, Transitions"/>
-    </div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+  <div>
+    <label class="text-sm font-medium mb-1 block">Grade</label>
+    <select id="gradeSelect" class="w-full border border-gray-300 rounded-xl shadow-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition">
+      <option value="">Select</option><option>6</option><option>7</option><option>8</option>
+    </select>
   </div>
+  <div>
+    <label class="text-sm font-medium mb-1 block">Subject</label>
+    <select id="subjectSelect" class="w-full border border-gray-300 rounded-xl shadow-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition">
+      <option value="">Select</option>
+      <option>Math</option>
+      <option>Science</option>
+      <option>English</option>
+      <option>History</option>
+      <option>Geography</option>
+      <option>Foreign Language</option>
+      <option>Computer Science</option>
+      <option>Economics</option>
+      <option>Art</option>
+      <option>Music</option>
+      <option>Health</option>
+      <option>Physical Education</option>
+    </select>
+  </div>
+  <div class="md:col-span-2">
+    <label class="text-sm font-medium mb-1 block">Topic</label>
+    <input id="promptInput" class="w-full border border-gray-300 rounded-xl shadow-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition" placeholder="e.g. Photosynthesis, Fractions, Transitions"/>
+  </div>
+</div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <div>
-      <label class="text-sm font-medium">Quiz Type</label>
-      <select id="quizTypeSelect" class="w-full border px-3 py-2 rounded">
-        <option value="mcq">Multiple Choice</option>
-        <option value="fill_blank">Fill in the Blank</option>
-        <option value="true_false">True/False</option>
-        <option value="short_answer">Short Answer</option>
-      </select>
-    </div>
-    <div>
-      <label class="text-sm font-medium">Number of Practice Questions</label>
-      <select id="quizCountSelect" class="w-full border px-3 py-2 rounded">
-        <option>3</option><option>5</option><option>7</option>
-      </select>
-    </div>
-    <div>
-      <label class="text-sm font-medium">Number of Flashcards</label>
-      <select id="flashCountSelect" class="w-full border px-3 py-2 rounded">
-        <option>3</option><option>5</option><option>7</option>
-      </select>
-    </div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  <div>
+    <label class="text-sm font-medium mb-1 block">Quiz Type</label>
+    <select id="quizTypeSelect" class="w-full border border-gray-300 rounded-xl shadow-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition">
+      <option value="mcq">Multiple Choice</option>
+      <option value="fill_blank">Fill in the Blank</option>
+      <option value="true_false">True/False</option>
+      <option value="short_answer">Short Answer</option>
+    </select>
   </div>
+  <div>
+    <label class="text-sm font-medium mb-1 block">Number of Practice Questions</label>
+    <select id="quizCountSelect" class="w-full border border-gray-300 rounded-xl shadow-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition">
+      <option>3</option><option>5</option><option>7</option>
+    </select>
+  </div>
+  <div>
+    <label class="text-sm font-medium mb-1 block">Number of Flashcards</label>
+    <select id="flashCountSelect" class="w-full border border-gray-300 rounded-xl shadow-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition">
+      <option>3</option><option>5</option><option>7</option>
+    </select>
+  </div>
+</div>
 
   <div class="flex justify-end mb-6">
     <button id="generateBtn" class="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700">Generate</button>
@@ -142,8 +180,6 @@
 
   </div>
 </div>
-
-
 
 <!-- Owl Assistant -->
 <div id="owlAssistant" class="fixed bottom-5 right-5 z-50 w-72 bg-white border border-blue-300 shadow-2xl rounded-xl p-4 flex items-start space-x-3">

@@ -1,6 +1,7 @@
 import os
 from flask import Flask
 from dotenv import load_dotenv
+from .models import init_db
 
 def create_app():
     load_dotenv()
